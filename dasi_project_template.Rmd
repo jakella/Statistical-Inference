@@ -1,0 +1,243 @@
+---
+Date: April 19th, 2015
+Title: Does a person's gun ownership status depend on his/her having a college degree?
+output:
+  html_document:
+    number_sections: yes
+    theme: cerulean
+---
+
+<!-- For more info on RMarkdown see http://rmarkdown.rstudio.com/ -->
+
+<!-- Enter the code required to load your data in the space below. The data will be loaded but the line of code won't show up in your write up (echo=FALSE) in order to save space-->
+```{r echo=FALSE}
+load(url("http://bit.ly/dasi_gss_data"))
+```
+
+<!-- In the remainder of the document, add R code chunks as needed -->
+
+### Introduction:
+
+In this project, I want to address the question: "Does the proportion of gun ownership depend on whether or not the group has a college degree?". Broadly, is there an association between inclination to own a gun to the fact that whether or not one has a college degree.
+
+The reason why I picked this question is that I was curious if more educated communities stay away from  violent weapons. 
+
+### Data:
+
+* Data Collection: I have obtained the data from gss data provided by the course at the url:http://bit.ly/dasi_gss_data. I have focussed my study for the year 2012. 
+
+* Cases: The cases or observations are the responses of the survey given to each individual. Various 
+  questions were posed to obtain  either their opinion or status. For this study I am interested in   
+  the level of education (degree)  and their gun ownership status.
+  
+* Variables: The analysis here is between two categorical variables: 1.  whether a person has a  
+  college degree or not (college) 2. His or Her gun ownership status (gun). We model  the college   
+  degree as the explanetory variable and the gun ownership as the response variable. 
+
+* Study : This is a observational study based on the past data that was collected. This is a random 
+  sample  collected from 1974 individuals in the year 2012. 
+  
+* Scope of inference - generalizability: The population of interest are  in two cateogories. 1. With 
+  a college degree. 2. Other without a college degree. Since the sample size is less than 10% of  
+  each of the categories, and so are independent. The sample size satifies the condition that the 
+  proportion times the sample size is greater than 10. So we can generalize the inference with in the 
+  confidence interval.  There may be oher factors that are ignored during this study, for example, 
+  political affiliation of a person, which migh influence a persons inclication to carry guns. 
+  Because of that, it is possible, we have biased results here. 
+  
+* Scope of inference - causality: No, causal links cannot be established, as this is a observational 
+  study and there might be many confounding factors that are not taken into accout.
+
+
+```{r echo=FALSE}
+gss12 = subset(gss, gss$year == "2012")
+gss12_college =  subset(gss12, gss12$degree == "Bachelor" | gss12$degree ==  "Graduate")
+
+prop_col_gun = subset(gss12_college, gss12_college$owngun == "Yes")
+
+prop_col_nogun = subset(gss12_college, gss12_college$owngun == "No")
+
+
+gss12_nocollege =  subset(gss12, gss12$degree != "Bachelor" & gss12$degree !=  "Graduate")
+prop_nocol_gun = subset(gss12_nocollege, gss12_nocollege$owngun == "Yes")
+
+prop_nocol_nogun = subset(gss12_nocollege, gss12_nocollege$owngun == "No")
+
+
+gundata = matrix(c(nrow(prop_col_gun), nrow(prop_col_nogun), nrow(prop_col_gun)/nrow(gss12_college), nrow(prop_nocol_gun), nrow(prop_nocol_nogun),  nrow(prop_nocol_gun)/nrow(gss12_nocollege)), nrow=3)
+colnames(gundata) = c('college', 'nocollege' )
+rownames(gundata) =  c('owngun', 'donot-owngun', 'proportion' )
+```
+
+### Exploratory data analysis:
+```{r echo=FALSE}
+gundata.table =  as.table(gundata)
+gundata.table
+barplot(gundata[1:2,], beside=FALSE, xlab = "college degree", ylab="gun ownership")
+```
+
+* From the table, we see a slightly higher proportion of gun owners from the group with no college 
+  degree. However, this is a very small difference. We have to find out if this difference is due to  
+  the difference in the level of college degree or due to chance, using both confidence interval and 
+  Hypothesis testing.
+  
+### Inference:
+
+The question for inference is, how do people with college degree compare with people without a college degree with respect to gun ownership.
+
+* Null Hypothesis: There is no difference in the proportion of gun ownership between people with   
+                  college degree and people without college degree. 
+
+* Alternative Hypothesis: The proprtion of gun ownership is different between people with college  
+                  degree and people without a college degree. 
+
+We will  compute Confidence Interval and cross check that result with Hypothesis testing.
+
+#### Conditions for CLT for Confidence interval
+
+The point_estimate of difference between the two proportions is:
+```{r echo=FALSE}
+p_col = nrow(prop_col_gun)/nrow(gss12_college)
+p_nocol = nrow(prop_nocol_gun)/nrow(gss12_nocollege)
+diff_point_estimate = p_col  - p_nocol
+diff_point_estimate
+```
+
+* Independence: 
+  1. Within group:
+    The sample is a random sample of people and is less than 10% of all the 
+    people who has  a college degree in 2012 and people who do not.
+  2. Between group:
+    The sample of people who go to college are independent of people who do not go. 
+
+* sample size
+  The below sample sizes for both groups are greater than 10.
+```{r echo=FALSE}
+p1 = p_col * (nrow(gss12_college)) 
+p2 = (1-p_col) * (nrow(gss12_college)) 
+p3 = p_nocol * (nrow(gss12_nocollege) )
+p4 = (1-p_nocol) * (nrow(gss12_nocollege) ) 
+p1
+p2
+p3
+p4
+```
+
+The confidence interval is of the form (point_estimate (+/-) Margin or error).
+We need to find the margin of error, which is Z_score X Standard Error. 
+For a 95% confidence interval Z_score is set to 1.96.
+The Standard error is:
+
+```{r echo=FALSE}
+se = sqrt((p_col*(1-p_col)/nrow(gss12_college)) + (p_nocol*(1-p_nocol)/nrow(gss12_nocollege)))
+se
+
+```
+
+For a 95% confidence interval, the difference in the gun ownership proportion  is:
+
+```{r echo=FALSE}
+CI = array(0,2)
+CI[1] =  (p_col-p_nocol) - 1.96*se
+CI[2] =  (p_col-p_nocol) + 1.96*se
+CI
+
+```
+
+Let's now proceed to Hypothesis testing to verify the result.
+
+Null Hypothesis is:
+H0: p_col-p_nocol = 0
+And the alternative hypothesis:
+HA: p_col-p_nocol != 0
+
+We need to get Pooled proportions for the Null value. Pooled proportion for the Null Hypothesis is:
+
+```{r echo=FALSE}
+p_hnot = (nrow(prop_col_gun) + nrow(prop_nocol_gun))/ (nrow(gss12_college) + nrow(gss12_nocollege))
+p_hnot
+```
+
+#### Conditions for Hypothesis Testing
+
+* Independence
+  *   Within group
+  The sample is a random sample of people and is less than 10% of all the 
+  people who go to or not to go college
+  *   Between group
+  The sample of people who go to college are independent of people who do not go. 
+
+* Sample size
+  Using the pooled proportions, we can verify the conditions for the sample sizes for both groups to 
+  make sure they are greater than 10.
+  
+```{r echo=FALSE}
+p1 = p_hnot * (nrow(gss12_college)) 
+p2 = (1-p_hnot) * (nrow(gss12_college)) 
+p3 = p_hnot * (nrow(gss12_nocollege) )
+p4 = (1-p_hnot) * (nrow(gss12_nocollege) ) 
+p1
+p2
+p3
+p4
+se2= sqrt((p_hnot*(1-p_hnot)/nrow(gss12_college))+ (p_hnot*(1-p_hnot)/nrow(gss12_nocollege)))
+```
+The Standard Error is also calculated from the Pooled proportion and the sample size of the individual groups:
+
+```{r echo=FALSE}
+se2= sqrt((p_hnot*(1-p_hnot)/nrow(gss12_college))+ (p_hnot*(1-p_hnot)/nrow(gss12_nocollege)))
+se2
+```
+
+The sample distribution of the difference between the two proportions is
+nearly normal with mean=0, and standard error = 0.02080434. 
+
+```{r echo=FALSE}
+x   <- seq(-0.1,0.1, 0.01)
+y = dnorm(x, 0, 0.02080434)
+plot(x,y, type="l", main="Distribution of the difference in proportions of gun owenership")
+
+```
+
+The p-value is obtained as follows:
+point-estimate of the differense is 
+```{r echo=FALSE}
+diff = p_col - p_nocol 
+diff
+```
+
+
+p_value is the probability of seeing the difference of the two proportions given the Null Hypothesis is True.  
+
+First we  calculate the Z score for the point estimate.
+Z_score is:
+```{r echo=FALSE}
+Z_score = (diff - 0)/se2
+Z_score
+```
+p_value corresposding to the Z_score is:
+```{r echo=FALSE}
+p_value = pnorm(Z_score, lower.tail = FALSE)
+p_value
+```
+
+We obtained a p_value of 0.664, which is very high compared to the  5% significance. 
+Because of that we fail to reject the Null Hypothesis. So there is not enough evidence that the gun ownership proportions differ based on whether a person has a college degree or not.
+
+The same result is also abtained by looking at the confidence interval we obtained: 
+(-0.04936721  0.03167900). 
+As we see, we have '0' in our confidence interval, which indicates that we cannot infact reject the  Null Hypothesis.
+
+### Conclusion:
+
+In this analysis, we wanted to check if the proportion of gun ownership depend on whether or not the group under study has a college degree or not.  I have  obtained gun ownership data from 2012 gss survey. 
+I  grouped the data into two variables based on the whether the group has a college degree or not and obtained a point estimate for the difference. Then, using a 95% confidence interval and Hypothesis testing, I decided that the difference we saw is purely by chance and there is infact no association between a person having a college degree and his or her gun ownership.
+
+For future study, I am interested in bringing in more factors, like political affiliation, and  Opinion of family income to see if those factorsinfluence gun ownership.  
+
+
+
+
+ 
+
+
